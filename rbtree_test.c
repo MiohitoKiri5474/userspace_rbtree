@@ -1,30 +1,60 @@
-#include "rbtree.h"
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <time.h>
-#include "rbtree_augmented.h"
+#include "rbtree_test.h"
 
-#define NODES 10000
-#define PERF_LOOPS 100
+void print_rbtree(void)
+{
+    for (rb_node *rb = rb_first(&root); rb; rb = rb_next(rb)) {
+        printf("%d ", rb_entry(rb, test_node, rb)->key);
+    }
+    putchar('\n');
+}
 
-struct test_node {
-    uint32_t key;
-    struct rb_node rb;
-
-    uint32_t val, augmented;
-};
-
-static struct rb_root root = RB_ROOT;
-static struct test_node nodes[NODES];
+static test_node *find(int key)
+{
+    rb_node *node = root.rb_node;
+    int node_key = 0;
+    while (node) {
+        node_key = rb_entry(node, test_node, rb)->key;
+        if (node_key < key)
+            node = node->rb_right;
+        else if (node_key > key)
+            node = node->rb_left;
+        else
+            return rb_entry(node, test_node, rb);
+    }
+    return NULL;
+}
 
 int main()
 {
     srand(time(NULL));
-    int i, j;
-    struct timeval begin, end;
-    double tm;
     puts("rbtree testing");
+
+    for (int i = 10; i >= 0; i--) {
+        test_node *tmp = (test_node *) malloc(sizeof(test_node));
+        tmp->key = rand() % 100, tmp->val = 0;
+        insert(tmp, &root);
+    }
+
+    print_rbtree();
+
+    puts("finish insert");
+
+    for (int i = 0, in, types; i < 10000000; i++) {
+        if (scanf("%d %d", &types, &in)) {
+            if (types == 1) {
+                printf(find(in) ? "Yes\n" : "No\n");
+            } else if (types == 2) {
+                test_node *tmp = find(in);
+                if (tmp) {
+                    erase(tmp, &root);
+                    puts("erased");
+                    print_rbtree();
+                } else {
+                    puts("cannot find the key value");
+                }
+            }
+        }
+    }
+
     return 0;
 }
