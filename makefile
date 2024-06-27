@@ -18,3 +18,6 @@ ctags: rbtree.c rbtree_test.c rbtree.h rbtree_augmented.h
 
 clean:
 	rm -f *.o rbtest liburb.so tags
+
+test: clean rbtest
+	./rbtest
