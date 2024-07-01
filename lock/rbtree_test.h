@@ -25,21 +25,63 @@ __attribute__((unused)) static void insert(test_node *node, rb_root *root)
 {
     rb_node **new_node = &root->rb_node, *parent = NULL;
     uint32_t key = node->key;
+    ptlock_t *current_lock = NULL;
 
     while (*new_node) {
         parent = *new_node;
+        ptlock_t *prev = parent->lock;
+        LOCK(prev);
+        if (current_lock)
+            UNLOCK(current_lock);
 
         new_node =
             (key < rb_entry(parent, test_node, rb)->key ? &parent->rb_left
                                                         : &parent->rb_right);
+        current_lock = prev;
     }
     rb_link_node(&node->rb, parent, new_node);
     rb_insert_color(&node->rb, root);
+    if (current_lock)
+        UNLOCK(current_lock);
 }
 
-__attribute__((unused)) static inline void erase(test_node *node, rb_root *root)
+__attribute__((unused)) static inline bool erase(int __key, rb_root *root)
 {
-    rb_erase(&node->rb, root);
+    rb_node *target = root->rb_node, *parent = NULL;
+    ptlock_t *current_lock = NULL, *parent_lock = NULL;
+
+    while (target) {
+        parent = target;
+        ptlock_t *prev = parent->lock;
+
+        LOCK(prev);
+        if (parent_lock)
+            UNLOCK(parent_lock);
+        parent_lock = current_lock;
+
+
+        int key = rb_entry(parent, test_node, rb)->key;
+        if (__key == key) {
+            current_lock = prev;
+            break;
+        }
+
+        target = (__key < key ? parent->rb_left : parent->rb_right);
+        current_lock = prev;
+    }
+    if (!target || rb_entry_safe(target, test_node, rb)->key != __key) {
+        if (current_lock)
+            UNLOCK(current_lock);
+        if ( parent_lock )
+            UNLOCK ( parent_lock );
+        return false;
+    }
+    if (current_lock)
+        UNLOCK(current_lock);
+    rb_erase(target, root);
+    if ( parent_lock )
+        UNLOCK ( parent_lock );
+    return true;
 }
 
 __attribute__((unused)) static inline uint32_t augment_recompute(

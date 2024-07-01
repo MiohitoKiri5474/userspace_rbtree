@@ -5,6 +5,7 @@
 
 
 struct rb_node {
+    ptlock_t *lock;
     unsigned long __rb_parent_color;
     struct rb_node *rb_right;
     struct rb_node *rb_left;
@@ -13,6 +14,7 @@ struct rb_node {
 
 struct rb_root {
     struct rb_node *rb_node;
+    ptlock_t *lock;
 };
 
 /*
