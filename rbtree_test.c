@@ -14,12 +14,11 @@ static test_node *find(int key)
     int node_key = 0;
     while (node) {
         node_key = rb_entry(node, test_node, rb)->key;
-        if (node_key < key)
-            node = node->rb_right;
-        else if (node_key > key)
-            node = node->rb_left;
-        else
+
+        if (node_key == key)
             return rb_entry(node, test_node, rb);
+
+        node = (node_key < key ? node->rb_left : node->rb_right);
     }
     return NULL;
 }
