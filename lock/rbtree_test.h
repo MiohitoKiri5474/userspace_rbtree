@@ -29,7 +29,7 @@ __attribute__((unused)) static void insert(test_node *node, rb_root *root)
 
     while (*new_node) {
         parent = *new_node;
-        ptlock_t *prev = parent->lock;
+        ptlock_t *prev = (*new_node)->lock;
         LOCK(prev);
         if (current_lock)
             UNLOCK(current_lock);
@@ -72,15 +72,15 @@ __attribute__((unused)) static inline bool erase(int __key, rb_root *root)
     if (!target || rb_entry_safe(target, test_node, rb)->key != __key) {
         if (current_lock)
             UNLOCK(current_lock);
-        if ( parent_lock )
-            UNLOCK ( parent_lock );
+        if (parent_lock)
+            UNLOCK(parent_lock);
         return false;
     }
     if (current_lock)
         UNLOCK(current_lock);
     rb_erase(target, root);
-    if ( parent_lock )
-        UNLOCK ( parent_lock );
+    if (parent_lock)
+        UNLOCK(parent_lock);
     return true;
 }
 
