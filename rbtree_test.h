@@ -1,9 +1,9 @@
-#include "rbtree.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
 #include <time.h>
+#include "rbtree.h"
 #include "rbtree_augmented.h"
 
 #define NODES 10000
@@ -29,9 +29,9 @@ __attribute__((unused)) static void insert(test_node *node, rb_root *root)
     while (*new_node) {
         parent = *new_node;
 
-        new_node = (key < rb_entry(parent, test_node, rb)->key
-                        ? &parent->rb_left
-                        : &parent->rb_right);
+        new_node =
+            (key < rb_entry(parent, test_node, rb)->key ? &parent->rb_left
+                                                        : &parent->rb_right);
     }
     rb_link_node(&node->rb, parent, new_node);
     rb_insert_color(&node->rb, root);
@@ -42,18 +42,18 @@ __attribute__((unused)) static inline void erase(test_node *node, rb_root *root)
     rb_erase(&node->rb, root);
 }
 
-__attribute__((unused)) static inline uint32_t augment_recompute(test_node *node, bool tmp)
+__attribute__((unused)) static inline uint32_t augment_recompute(
+    test_node *node,
+    bool tmp)
 {
     uint32_t max = node->val, child_augmented;
     if (node->rb.rb_left) {
-        child_augmented =
-            rb_entry(node->rb.rb_left, test_node, rb)->augmented;
+        child_augmented = rb_entry(node->rb.rb_left, test_node, rb)->augmented;
         if (max < child_augmented)
             max = child_augmented;
     }
     if (node->rb.rb_right) {
-        child_augmented =
-            rb_entry(node->rb.rb_right, test_node, rb)->augmented;
+        child_augmented = rb_entry(node->rb.rb_right, test_node, rb)->augmented;
         if (max < child_augmented)
             max = child_augmented;
     }
@@ -67,7 +67,8 @@ RB_DECLARE_CALLBACKS(static,
                      augmented,
                      augment_recompute);
 
-__attribute__((unused)) static void insert_augmented(test_node *node, rb_root *root)
+__attribute__((unused)) static void insert_augmented(test_node *node,
+                                                     rb_root *root)
 {
     rb_node **new_node = &root->rb_node, *rb_parent = NULL;
     uint32_t key = node->key, val = node->val;
@@ -87,12 +88,13 @@ __attribute__((unused)) static void insert_augmented(test_node *node, rb_root *r
     rb_insert_augmented(&node->rb, root, &augment_callbacks);
 }
 
-__attribute__((unused)) static void erase_augmented(test_node *node, rb_root *root)
+__attribute__((unused)) static void erase_augmented(test_node *node,
+                                                    rb_root *root)
 {
     rb_erase_augmented(&node->rb, root, &augment_callbacks);
 }
 
- __attribute__((unused)) static void init(void)
+__attribute__((unused)) static void init(void)
 {
     for (int i = 0; i < NODES; i++) {
         nodes[i].key = rand();
@@ -147,4 +149,3 @@ __attribute__((unused)) static void check_augmented(int nr_nodes)
     for (rb_node *rb = rb_first(&root); rb; rb = rb_next(rb)) {
     }
 }
-
