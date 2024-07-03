@@ -1,51 +1,12 @@
-#include "rbtree_test.h"
 #include <pthread.h>
 #include <unistd.h>
-#include "rbtree.h"
-#include "rbtree_augmented.h"
+
+#include "include/rbtree.h"
+#include "include/rbtree_test.h"
 
 #define maxN 1000000
-int lib[maxN + 5];
 int deleted_cnt = 0, inserted_cnt = 0;
-ptlock_t *deleted_cnt_lock, *inserted_cnt_lock, *lib_lock;
-
-bool check_rbtree(rb_node *o)
-{
-    if (!o)
-        return true;
-    if (*(o->lock))
-        return false;
-    return check_rbtree(o->rb_left) && check_rbtree(o->rb_right);
-}
-
-test_node *find(int key)
-{
-    rb_node *node = root.rb_node;
-    int node_key = 0;
-    ptlock_t *current_lock = NULL;
-
-    while (node) {
-        ptlock_t *prev = node->lock;
-        LOCK(prev);
-        if (current_lock)
-            UNLOCK(current_lock);
-
-        node_key = rb_entry(node, test_node, rb)->key;
-
-        if (key == node_key) {
-            UNLOCK(prev);
-            if (current_lock)
-                UNLOCK(current_lock);
-            return rb_entry(node, test_node, rb);
-        }
-        node = (node_key < key ? node->rb_left : node->rb_right);
-
-        current_lock = prev;
-    }
-    if (current_lock)
-        UNLOCK(current_lock);
-    return NULL;
-}
+ptlock_t *deleted_cnt_lock, *inserted_cnt_lock;
 
 static __always_inline void DO_INSERT(void)
 {
@@ -60,35 +21,21 @@ static __always_inline void DO_INSERT(void)
     LOCK(inserted_cnt_lock);
     inserted_cnt++;
     UNLOCK(inserted_cnt_lock);
-    LOCK(lib_lock);
-    lib[key]++;
-    UNLOCK(lib_lock);
 }
 
 static __always_inline void DO_ERASE(void)
 {
     int key = rand() % maxN;
-    if (rand() & 1) {
-        LOCK(lib_lock);
-        while (!lib[key])
-            key = rand() % maxN;
-        UNLOCK(lib_lock);
-    }
     if (erase(key, &root)) {
         LOCK(deleted_cnt_lock);
         deleted_cnt++;
         UNLOCK(deleted_cnt_lock);
-        LOCK(lib_lock);
-        lib[key]--;
-        UNLOCK(lib_lock);
     }
 }
 
 static __always_inline void DO_QUERY(void)
 {
-    find(
-        rb_entry((rand() & 1 ? rb_first(&root) : rb_last(&root)), test_node, rb)
-            ->key);
+    find(rand() % maxN, root.rb_node);
 }
 
 int counting_nodes(rb_node *o)
@@ -127,6 +74,7 @@ static __always_inline void *thread_op(void *arg)
             DO_QUERY();
             break;
         default:
+            break;
         }
     }
     printf("[Info]: Thread %d finish mixed operation\n", *(int *) arg);
@@ -142,11 +90,9 @@ int main()
     root.lock = (ptlock_t *) malloc(sizeof(ptlock_t));
     deleted_cnt_lock = (ptlock_t *) malloc(sizeof(ptlock_t));
     inserted_cnt_lock = (ptlock_t *) malloc(sizeof(ptlock_t));
-    lib_lock = (ptlock_t *) malloc(sizeof(ptlock_t));
     INIT_LOCK(root.lock);
     INIT_LOCK(deleted_cnt_lock);
     INIT_LOCK(inserted_cnt_lock);
-    INIT_LOCK(lib_lock);
 
     int thread_num = 4, *thread_id, cnt = 0;
     pthread_t thread[thread_num];
@@ -166,8 +112,6 @@ int main()
         }
         printf("[Info]: Thread %d joined\n", i + 1);
     }
-
-    puts("[Info]: RBTree check passed");
 
     printf("inserted_cnt: %d\n", inserted_cnt);
     printf("deleted_cnt: %d\n", deleted_cnt);

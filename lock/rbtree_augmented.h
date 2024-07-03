@@ -12,7 +12,6 @@
 #ifndef _LINUX_RBTREE_AUGMENTED_H
 #define _LINUX_RBTREE_AUGMENTED_H
 
-#include <stdio.h>
 #include "rbtree.h"
 
 /*
@@ -205,9 +204,8 @@ static inline void __rb_change_child(struct rb_node *old,
             WRITE_ONCE(parent->rb_left, new);
         else
             WRITE_ONCE(parent->rb_right, new);
-    } else {
+    } else
         WRITE_ONCE(root->rb_node, new);
-    }
 }
 
 
@@ -240,9 +238,8 @@ static __always_inline struct rb_node *__rb_erase_augmented(
         if (child) {
             child->__rb_parent_color = pc;
             rebalance = NULL;
-        } else {
+        } else
             rebalance = __rb_is_black(pc) ? parent : NULL;
-        }
         tmp = parent;
     } else if (!child) {
         /* Still case 1, but this time the child is node->rb_left */
